@@ -1,6 +1,6 @@
 # ClimaSphere: Global Climate Event Tracker
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asiakay/climasphere-global-climate-event-tracker)
 
 ClimaSphere is a visually stunning, minimalist web application designed to track global climate events in real-time. The application fetches data from a specified API, presenting it in a clean, elegant, and highly readable card-based interface. It prioritizes user experience with a responsive, mobile-first design, seamless state transitions, and clear feedback for loading, error, and empty data scenarios.
 
@@ -75,4 +75,4 @@ This application is designed for easy deployment to Cloudflare's global network.
 
 Alternatively, you can deploy your own version of this project with a single click.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/asiakay/climasphere-global-climate-event-tracker)
