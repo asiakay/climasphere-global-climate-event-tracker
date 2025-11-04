@@ -1,148 +1,166 @@
-// Home page of the app, Currently a demo page for demonstration.
-// Please rewrite this file to implement your own logic. Do not replace or delete it, simply rewrite this HomePage.tsx file.
-import { useEffect } from 'react'
-import { Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { Toaster, toast } from '@/components/ui/sonner'
-import { create } from 'zustand'
-import { useShallow } from 'zustand/react/shallow'
-import { AppLayout } from '@/components/layout/AppLayout'
-
-// Timer store: independent slice with a clear, minimal API, for demonstration
-type TimerState = {
-  isRunning: boolean;
-  elapsedMs: number;
-  start: () => void;
-  pause: () => void;
-  reset: () => void;
-  tick: (deltaMs: number) => void;
-}
-
-const useTimerStore = create<TimerState>((set) => ({
-  isRunning: false,
-  elapsedMs: 0,
-  start: () => set({ isRunning: true }),
-  pause: () => set({ isRunning: false }),
-  reset: () => set({ elapsedMs: 0, isRunning: false }),
-  tick: (deltaMs) => set((s) => ({ elapsedMs: s.elapsedMs + deltaMs })),
-}))
-
-// Counter store: separate slice to showcase multiple stores without coupling
-type CounterState = {
-  count: number;
-  inc: () => void;
-  reset: () => void;
-}
-
-const useCounterStore = create<CounterState>((set) => ({
-  count: 0,
-  inc: () => set((s) => ({ count: s.count + 1 })),
-  reset: () => set({ count: 0 }),
-}))
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-export function HomePage() {
-  // Select only what is needed to avoid unnecessary re-renders
-  const { isRunning, elapsedMs } = useTimerStore(
-    useShallow((s) => ({ isRunning: s.isRunning, elapsedMs: s.elapsedMs })),
-  )
-  const start = useTimerStore((s) => s.start)
-  const pause = useTimerStore((s) => s.pause)
-  const resetTimer = useTimerStore((s) => s.reset)
-  const count = useCounterStore((s) => s.count)
-  const inc = useCounterStore((s) => s.inc)
-  const resetCount = useCounterStore((s) => s.reset)
-
-  // Drive the timer only while running; avoid update-depth issues with a scoped RAF
-  useEffect(() => {
-    if (!isRunning) return
-    let raf = 0
-    let last = performance.now()
-    const loop = () => {
-      const now = performance.now()
-      const delta = now - last
-      last = now
-      // Read store API directly to keep effect deps minimal and stable
-      useTimerStore.getState().tick(delta)
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [isRunning])
-
-  const onPleaseWait = () => {
-    inc()
-    if (!isRunning) {
-      start()
-      toast.success('Building your app…', {
-        description: 'Hang tight, we\'re setting everything up.',
-      })
-    } else {
-      pause()
-      toast.info('Taking a short pause', {
-        description: 'We\'ll continue shortly.',
-      })
-    }
-  }
-
-  const formatted = formatDuration(elapsedMs)
-
+import React, { useEffect } from 'react';
+import { Leaf, RefreshCw, MapPin, Calendar, AlertTriangle, SearchX, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEventsStore } from '@/store/eventsStore';
+import { useClimateEvents } from '@/hooks/useClimateEvents';
+import type { ClimateEvent } from '@/types';
+import { cn } from '@/lib/utils';
+const AppHeader = () => (
+  <header className="text-center mb-10 md:mb-16 animate-fade-in">
+    <h1 className="text-4xl sm:text-5xl font-display text-green-800 dark:text-green-300 tracking-tight flex items-center justify-center">
+      <Leaf className="w-10 h-10 mr-3 text-green-500" />
+      ClimaSphere
+    </h1>
+    <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
+      A real-time dashboard tracking global climate events and initiatives.
+    </p>
+  </header>
+);
+const Controls = ({ onRefresh }: { onRefresh: () => void }) => {
+  const isLoading = useEventsStore(state => state.isLoading);
+  const lastUpdated = useEventsStore(state => state.lastUpdated);
+  const isFallback = useEventsStore(state => state.isFallback);
   return (
-    <AppLayout>
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 overflow-hidden relative">
-        <ThemeToggle />
-        <div className="absolute inset-0 bg-gradient-rainbow opacity-10 dark:opacity-20 pointer-events-none" />
-        <div className="text-center space-y-8 relative z-10 animate-fade-in">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-primary floating">
-              <Sparkles className="w-8 h-8 text-white rotating" />
-            </div>
+    <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <p className={cn(
+        "text-sm italic",
+        isFallback ? "text-red-500" : "text-muted-foreground"
+      )}>
+        {lastUpdated ? (isFallback ? `Displaying fallback data. Last attempt: ${lastUpdated}` : `Last updated: ${lastUpdated}`) : 'Fetching data...'}
+      </p>
+      <Button onClick={onRefresh} disabled={isLoading} variant="outline" className="group">
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <RefreshCw className="w-4 h-4 mr-2 transition-transform group-hover:rotate-180" />
+        )}
+        {isLoading ? 'Refreshing...' : 'Refresh Data'}
+      </Button>
+    </div>
+  );
+};
+const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => {
+  const dateText = event.date
+    ? format(new Date(event.date), 'MMM d, yyyy')
+    : 'Date TBD';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.05 }}
+    >
+      <Card className="h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-green-200 dark:hover:border-green-800">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <CardTitle className="text-lg font-bold text-foreground">{event.title || 'Untitled Event'}</CardTitle>
+            <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-3 py-1 rounded-full flex-shrink-0">
+              {dateText}
+            </span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-balance leading-tight">
-            Creating your <span className="text-gradient">app</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto text-pretty">
-            Your application would be ready soon.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button 
-              size="lg"
-              onClick={onPleaseWait}
-              className="btn-gradient px-8 py-4 text-lg font-semibold hover:-translate-y-0.5 transition-all duration-200"
-              aria-live="polite"
-            >
-              Please Wait
-            </Button>
+        </CardHeader>
+        <CardContent className="flex-grow flex flex-col justify-between">
+          <div className="space-y-3 text-muted-foreground text-sm">
+            <p className="flex items-start">
+              <MapPin className="w-4 h-4 mr-3 mt-0.5 text-red-500 flex-shrink-0" />
+              <span>{event.address || 'Location Unknown'}</span>
+            </p>
+            <p className="flex items-center">
+              <Calendar className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
+              {event.date ? 'Scheduled' : 'Awaiting Confirmation'}
+            </p>
           </div>
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div>
-              Time elapsed: <span className="font-medium tabular-nums text-foreground">{formatted}</span>
-            </div>
-            <div>
-              Coins: <span className="font-medium tabular-nums text-foreground">{count}</span>
-            </div>
+          <Button className="w-full mt-6 bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white dark:text-primary-foreground">
+            View Details
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+const LoadingSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <Card key={i}>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-6 w-20" />
           </div>
-          <div className="flex justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => { resetTimer(); resetCount(); toast('Reset complete') }}>
-              Reset
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { inc(); toast('Coin added') }}>
-              Add Coin
-            </Button>
-          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-10 w-full mt-4" />
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
+const ErrorDisplay = () => {
+  const error = useEventsStore(state => state.error);
+  if (!error) return null;
+  return (
+    <Alert variant="destructive" className="animate-scale-in">
+      <AlertTriangle className="h-4 w-4" />
+      <AlertTitle>Data Fetch Error</AlertTitle>
+      <AlertDescription>{error}</AlertDescription>
+    </Alert>
+  );
+};
+const EmptyState = () => (
+  <div className="text-center py-16 px-6 bg-secondary rounded-2xl border border-dashed animate-fade-in">
+    <SearchX className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+    <h3 className="text-xl font-semibold text-foreground">No Events Found</h3>
+    <p className="text-muted-foreground mt-2">
+      We couldn't find any climate events at the moment, or the data structure was unexpected.
+    </p>
+  </div>
+);
+const EventGrid = () => {
+  const events = useEventsStore(state => state.events);
+  const isLoading = useEventsStore(state => state.isLoading);
+  const error = useEventsStore(state => state.error);
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+  if (error) {
+    return <ErrorDisplay />;
+  }
+  if (events.length === 0) {
+    return <EmptyState />;
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <AnimatePresence>
+        {events.map((event, index) => (
+          <EventCard key={`${event.title}-${index}`} event={event} index={index} />
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+};
+export function HomePage() {
+  const { fetchEvents } = useClimateEvents();
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+  return (
+    <div className="min-h-screen bg-background dark:bg-gradient-subtle bg-gradient-subtle">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-8 md:py-10 lg:py-12">
+          <AppHeader />
+          <Controls onRefresh={fetchEvents} />
+          <EventGrid />
         </div>
-        <footer className="absolute bottom-8 text-center text-muted-foreground/80">
-          <p>Powered by Cloudflare</p>
-        </footer>
-        <Toaster richColors closeButton />
-      </div>
-    </AppLayout>
-  )
+      </main>
+      <footer className="text-center py-6 text-sm text-muted-foreground">
+        Built with ❤️ at Cloudflare
+      </footer>
+    </div>
+  );
 }
