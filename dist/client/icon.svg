@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#166534"/>
+  <g transform="translate(256,256)">
+    <!-- Earth/Globe -->
+    <circle cx="0" cy="0" r="120" fill="#22c55e" opacity="0.9"/>
+
+    <!-- Continents (simplified) -->
+    <path d="M -60 -40 Q -30 -60, 0 -50 Q 30 -40, 60 -30 L 60 0 Q 40 20, 0 30 Q -40 25, -60 10 Z" fill="#166534"/>
+    <path d="M -80 30 Q -50 40, -20 35 L -20 60 Q -50 65, -80 55 Z" fill="#166534"/>
+    <path d="M 40 -70 Q 60 -60, 70 -40 L 50 -30 Q 40 -50, 30 -65 Z" fill="#166534"/>
+
+    <!-- Leaf icon overlay (sustainability symbol) -->
+    <g transform="translate(-140,-140) scale(0.8)">
+      <path d="M 30 50 Q 30 10, 70 10 Q 100 10, 100 40 Q 100 70, 70 90 Q 50 100, 30 90 L 30 50 Z"
+            fill="#86efac" stroke="#22c55e" stroke-width="3"/>
+      <path d="M 30 50 Q 50 60, 70 50" stroke="#22c55e" stroke-width="2" fill="none"/>
+    </g>
+  </g>
+</svg>

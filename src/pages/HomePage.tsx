@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEventsStore } from '@/store/eventsStore';
 import { useClimateEvents } from '@/hooks/useClimateEvents';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import type { ClimateEvent } from '@/types';
 import { cn } from '@/lib/utils';
 const AppHeader = () => (
@@ -49,9 +50,16 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
     ? format(new Date(event.date_local), 'MMM d, yyyy')
     : 'Date TBD';
 
-  const location = event.venue && event.city
-    ? `${event.venue}, ${event.city}`
-    : event.address || event.city || 'Location Unknown';
+  // Clean up backslashes from the API data
+  const cleanText = (text: string | undefined) => text?.replace(/\\/g, '') || '';
+
+  const venue = cleanText(event.venue);
+  const city = cleanText(event.city);
+  const address = cleanText(event.address);
+
+  const location = venue && city
+    ? `${venue}, ${city}`
+    : address || city || 'Location Unknown';
 
   return (
     <motion.div
@@ -62,7 +70,7 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
       <Card className="h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-transparent hover:border-green-200 dark:hover:border-green-800">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-lg font-bold text-foreground">{event.title || 'Untitled Event'}</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground">{cleanText(event.title) || 'Untitled Event'}</CardTitle>
             <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-3 py-1 rounded-full flex-shrink-0">
               {dateText}
             </span>
@@ -73,7 +81,7 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
             {event.host && (
               <p className="flex items-start">
                 <span className="font-semibold mr-2 text-foreground">Host:</span>
-                <span>{event.host}</span>
+                <span>{cleanText(event.host)}</span>
               </p>
             )}
             <p className="flex items-start">
@@ -183,6 +191,7 @@ export function HomePage() {
       <footer className="text-center py-6 text-sm text-muted-foreground">
         Built with ❤️ by <a href='https://asialakay-portfolio.asialakaygrady-6d4.workers.dev/' target="_blank" rel="noopener noreferrer">Asia Lakay Grady</a> with <a href='https://build.cloudflare.dev/'>Build.Cloudflare.Dev</a>, Cloudflare Workers & React. Data sourced from curated public APIs.
       </footer>
+      <PWAInstallPrompt />
     </div>
   );
 }

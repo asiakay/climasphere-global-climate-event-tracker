@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "climasphere",
+	"name": "climasphere-global-climate-event-tracker",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
