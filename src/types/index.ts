@@ -1,5 +1,12 @@
 export interface ClimateEvent {
   title: string;
-  address: string;
-  date?: string;
+  date_local?: string;
+  time_local?: string;
+  city?: string;
+  host?: string;
+  venue?: string;
+  address?: string;
+  link?: string;
+  source?: string;
+  tags?: string[];
 }

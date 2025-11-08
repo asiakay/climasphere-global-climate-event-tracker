@@ -45,9 +45,14 @@ const Controls = ({ onRefresh }: { onRefresh: () => void }) => {
   );
 };
 const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => {
-  const dateText = event.date
-    ? format(new Date(event.date), 'MMM d, yyyy')
+  const dateText = event.date_local
+    ? format(new Date(event.date_local), 'MMM d, yyyy')
     : 'Date TBD';
+
+  const location = event.venue && event.city
+    ? `${event.venue}, ${event.city}`
+    : event.address || event.city || 'Location Unknown';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -65,18 +70,35 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
         </CardHeader>
         <CardContent className="flex-grow flex flex-col justify-between">
           <div className="space-y-3 text-muted-foreground text-sm">
+            {event.host && (
+              <p className="flex items-start">
+                <span className="font-semibold mr-2 text-foreground">Host:</span>
+                <span>{event.host}</span>
+              </p>
+            )}
             <p className="flex items-start">
               <MapPin className="w-4 h-4 mr-3 mt-0.5 text-red-500 flex-shrink-0" />
-              <span>{event.address || 'Location Unknown'}</span>
+              <span>{location}</span>
             </p>
             <p className="flex items-center">
               <Calendar className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
-              {event.date ? 'Scheduled' : 'Awaiting Confirmation'}
+              {event.date_local ? (event.time_local ? `${dateText} at ${event.time_local}` : dateText) : 'Awaiting Confirmation'}
             </p>
           </div>
-          <Button className="w-full mt-6 bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white dark:text-primary-foreground">
-            View Details
-          </Button>
+          {event.link ? (
+            <Button
+              asChild
+              className="w-full mt-6 bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white dark:text-primary-foreground"
+            >
+              <a href={event.link} target="_blank" rel="noopener noreferrer">
+                View Details
+              </a>
+            </Button>
+          ) : (
+            <Button className="w-full mt-6 bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white dark:text-primary-foreground" disabled>
+              View Details
+            </Button>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -159,7 +181,7 @@ export function HomePage() {
         </div>
       </main>
       <footer className="text-center py-6 text-sm text-muted-foreground">
-        Built with ❤️ at Cloudflare
+        Built with ❤️ by <a href='https://asialakay-portfolio.asialakaygrady-6d4.workers.dev/' target="_blank" rel="noopener noreferrer">Asia Lakay Grady</a> with <a href='https://build.cloudflare.dev/'>Build.Cloudflare.Dev</a>, Cloudflare Workers & React. Data sourced from curated public APIs.
       </footer>
     </div>
   );
