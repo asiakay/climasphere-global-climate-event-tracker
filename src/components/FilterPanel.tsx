@@ -60,10 +60,10 @@ export function FilterPanel() {
     };
   }, [watch, setFilters]);
 
-  function handleReset() {
+  const handleReset = () => {
     reset({});
     setFilters({});
-  }
+  };
 
   const selectStyles = {
     control: (base: Record<string, unknown>) => ({
