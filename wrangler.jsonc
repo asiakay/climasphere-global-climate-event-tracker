@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "climasphere-global-climate-event-tracker",
+	"name": "climasphere-event-tr-8u6cq0ozo4rjocyytleif",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
@@ -13,5 +13,12 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "climasphere-events",
+			"database_id": "00000000-0000-0000-0000-000000000000"
+		}
+	]
 }

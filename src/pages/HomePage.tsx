@@ -6,11 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEventsStore } from '@/store/eventsStore';
+import { useEventsStore, selectFilteredEvents } from '@/store/eventsStore';
 import { useClimateEvents } from '@/hooks/useClimateEvents';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { StatsHeader, EventsByMonthChart, EventsByCityChart, EventsByTagChart } from '@/components/EventCharts';
+import { FilterPanel } from '@/components/FilterPanel';
 import type { ClimateEvent } from '@/types';
 import { cn } from '@/lib/utils';
+
 const AppHeader = () => (
   <header className="text-center mb-10 md:mb-16 animate-fade-in">
     <h1 className="text-4xl sm:text-5xl font-display text-green-800 dark:text-green-300 tracking-tight flex items-center justify-center">
@@ -22,6 +25,7 @@ const AppHeader = () => (
     </p>
   </header>
 );
+
 const Controls = ({ onRefresh }: { onRefresh: () => void }) => {
   const isLoading = useEventsStore(state => state.isLoading);
   const lastUpdated = useEventsStore(state => state.lastUpdated);
@@ -45,12 +49,12 @@ const Controls = ({ onRefresh }: { onRefresh: () => void }) => {
     </div>
   );
 };
+
 const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => {
   const dateText = event.date_local
     ? format(new Date(event.date_local), 'MMM d, yyyy')
     : 'Date TBD';
 
-  // Clean up backslashes from the API data
   const cleanText = (text: string | undefined) => text?.replace(/\\/g, '') || '';
 
   const venue = cleanText(event.venue);
@@ -92,6 +96,15 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
               <Calendar className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" />
               {event.date_local ? (event.time_local ? `${dateText} at ${event.time_local}` : dateText) : 'Awaiting Confirmation'}
             </p>
+            {event.tags && event.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {event.tags.map(tag => (
+                  <span key={tag} className="text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-800">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           {event.link ? (
             <Button
@@ -112,6 +125,7 @@ const EventCard = ({ event, index }: { event: ClimateEvent; index: number }) => 
     </motion.div>
   );
 };
+
 const LoadingSkeleton = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {Array.from({ length: 4 }).map((_, i) => (
@@ -131,6 +145,7 @@ const LoadingSkeleton = () => (
     ))}
   </div>
 );
+
 const ErrorDisplay = () => {
   const error = useEventsStore(state => state.error);
   if (!error) return null;
@@ -142,49 +157,78 @@ const ErrorDisplay = () => {
     </Alert>
   );
 };
+
 const EmptyState = () => (
   <div className="text-center py-16 px-6 bg-secondary rounded-2xl border border-dashed animate-fade-in">
     <SearchX className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
     <h3 className="text-xl font-semibold text-foreground">No Events Found</h3>
     <p className="text-muted-foreground mt-2">
-      We couldn't find any climate events at the moment, or the data structure was unexpected.
+      No climate events match your current filters.
     </p>
   </div>
 );
+
 const EventGrid = () => {
-  const events = useEventsStore(state => state.events);
+  const { events, filters } = useEventsStore(s => ({ events: s.events, filters: s.filters }));
   const isLoading = useEventsStore(state => state.isLoading);
   const error = useEventsStore(state => state.error);
+  const filtered = selectFilteredEvents(events, filters);
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
-  if (error) {
+  if (error && events.length === 0) {
     return <ErrorDisplay />;
   }
-  if (events.length === 0) {
+  if (filtered.length === 0) {
     return <EmptyState />;
   }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <AnimatePresence>
-        {events.map((event, index) => (
+        {filtered.map((event, index) => (
           <EventCard key={`${event.title}-${index}`} event={event} index={index} />
         ))}
       </AnimatePresence>
     </div>
   );
 };
+
 export function HomePage() {
   const { fetchEvents } = useClimateEvents();
+  const { events, isLoading } = useEventsStore(s => ({ events: s.events, isLoading: s.isLoading }));
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  const showDashboard = events.length > 0 && !isLoading;
+
   return (
     <div className="min-h-screen bg-background dark:bg-gradient-subtle bg-gradient-subtle">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12">
           <AppHeader />
           <Controls onRefresh={fetchEvents} />
+
+          <AnimatePresence>
+            {showDashboard && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <StatsHeader />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                  <EventsByMonthChart />
+                  <EventsByCityChart />
+                  <EventsByTagChart />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <FilterPanel />
           <EventGrid />
         </div>
       </main>
