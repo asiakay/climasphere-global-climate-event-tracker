@@ -19,11 +19,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
         // D1 path: serve from cache when fresh, refresh when stale
         if (db) {
-            if (!await isStale(db)) {
-                const events = await getEventsFromDB(db);
-                return c.json({ success: true, data: events, source: 'cache' });
-            }
             try {
+                if (!await isStale(db)) {
+                    const events = await getEventsFromDB(db);
+                    return c.json({ success: true, data: events, source: 'cache' });
+                }
                 const data = await fetchUpstream();
                 if (data) {
                     await upsertEvents(db, data);
@@ -35,7 +35,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
                     return c.json({ success: true, data: stale, source: 'stale-cache' });
                 }
             } catch (error) {
-                console.error('D1 path error:', error);
+                console.error('D1 error, falling back to proxy:', error);
                 // Fall through to direct proxy
             }
         }
