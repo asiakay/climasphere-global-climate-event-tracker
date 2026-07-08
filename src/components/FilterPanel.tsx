@@ -58,7 +58,8 @@ export function FilterPanel() {
       sub.unsubscribe();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [watch, setFilters]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleReset = () => {
     reset({});
