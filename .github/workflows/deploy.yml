@@ -23,6 +23,12 @@ jobs:
       - name: Type check
         run: bunx tsc --noEmit
 
+      - name: Apply D1 schema
+        run: bunx wrangler d1 execute climsphere-2026 --file=worker/schema.sql --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Build & Deploy
         run: bun run deploy
         env:
